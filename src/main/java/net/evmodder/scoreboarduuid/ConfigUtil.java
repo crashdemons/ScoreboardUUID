@@ -33,7 +33,7 @@ public class ConfigUtil {
      * @param plugin the plugin to retrieve the configuration for
      * @return a Map of scores configured to be transferred and their associated behaviors. 
      */
-    public static HashMap<String, ScoreboardUpdateBehavior> getScoresToUpdate(JavaPlugin plugin){
+    public static Map<String, ScoreboardUpdateBehavior> getScoresToUpdate(JavaPlugin plugin){
         if (!plugin.getConfig().isConfigurationSection("uuid-based-scores")) {
             return null;
             //getLogger().warning("No uuid-based scores found in config! Disabling plugin");

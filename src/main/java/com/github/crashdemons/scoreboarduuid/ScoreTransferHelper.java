@@ -21,7 +21,7 @@ import org.bukkit.scoreboard.ScoreboardManager;
  */
 public class ScoreTransferHelper {
     private final JavaPlugin plugin;
-    private final HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate;
+    private final Map<String, ScoreboardUpdateBehavior> scoresToUpdate;
     private final boolean resetOldScores;//may need to change final if you want reload capability.
     
     /**
@@ -30,7 +30,7 @@ public class ScoreTransferHelper {
      * @param scoresToUpdate a map of named scoreboard objectives and their associated update behaviors
      * @param resetOldScores whether to reset all scores of the user(s) the scores are being transferred from.
      */
-    public ScoreTransferHelper(JavaPlugin parentPlugin, HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate, boolean resetOldScores){
+    public ScoreTransferHelper(JavaPlugin parentPlugin, Map<String, ScoreboardUpdateBehavior> scoresToUpdate, boolean resetOldScores){
         plugin=parentPlugin;
         this.scoresToUpdate = scoresToUpdate;
         this.resetOldScores = resetOldScores;

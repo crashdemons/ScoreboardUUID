@@ -2,9 +2,8 @@ package net.evmodder.scoreboarduuid;
 
 import com.github.crashdemons.scoreboarduuid.ScoreTransferHelper;
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
-import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -19,7 +18,7 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate = ConfigUtil.getScoresToUpdate(this);
+        Map<String, ScoreboardUpdateBehavior> scoresToUpdate = ConfigUtil.getScoresToUpdate(this);
         if(scoresToUpdate==null){
             getLogger().warning("No uuid-based scores found in config! Disabling plugin");
             this.onDisable();
