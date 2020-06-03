@@ -1,19 +1,14 @@
 package net.evmodder.scoreboarduuid;
 
+import com.github.crashdemons.scoreboarduuid.ScoreTransferHelper;
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
-import com.github.crashdemons.util.Pair;
-import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
 
 /**
  *
@@ -21,11 +16,12 @@ import org.bukkit.scoreboard.ScoreboardManager;
  */
 public class ScoreboardUUID extends JavaPlugin implements Listener {
 
-    HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate;
-    boolean resetOldScores;
+    ScoreTransferHelper transferHelper = null;
 
     @Override
     public void onEnable() {
+        HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate = new HashMap<>();
+        boolean resetOldScores;
         if (!getConfig().isConfigurationSection("uuid-based-scores")) {
             getLogger().warning("No uuid-based scores found in config! Disabling plugin");
             this.onDisable();
@@ -46,82 +42,9 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
             scoresToUpdate.put(key, updateBehavior);
         }
 
+        transferHelper = new ScoreTransferHelper(this, scoresToUpdate, resetOldScores);
+        
         getServer().getPluginManager().registerEvents(this, this);
-    }
-
-    boolean updateScore(Objective obj, String username, int scoreValue, ScoreboardUpdateBehavior updateBehavior) {
-        Score newScoreObject = obj.getScore(username);
-
-        int newScoreValue;
-        switch (updateBehavior) {
-            case SAFE_MOVE:
-                if (newScoreObject.isScoreSet()) {
-                    getLogger().severe("Failed to update score '" + obj.getName() + "' for user '" + username + "' - entry already exists!");
-                    return false;
-                }
-            //else, intentional fallthrough - overwrite unset scores.
-            case OVERWRITE:
-                newScoreValue = scoreValue;
-                break;
-            case ADD:
-                newScoreValue = scoreValue + (newScoreObject.isScoreSet() ? newScoreObject.getScore() : 0);
-                break;
-            default:
-                getLogger().severe("Encountered invalid behavior type " + updateBehavior + " while updating score: " + obj.getName());
-                newScoreValue = -1;
-                return false;
-        }
-        //if(newScoreObject.isScoreSet() && newScoreObject.getScore() == newScoreValue) return false; // no change occurred.
-        newScoreObject.setScore(newScoreValue);
-        return true;
-    }
-
-    boolean updateScores(String oldName, String newName) {
-        getLogger().info("Updating scoreboard of '" + oldName + "' to '" + newName + "'");
-
-        final ScoreboardManager sm = getServer().getScoreboardManager();
-        if (sm == null) {
-            throw new IllegalStateException("World has not loaded yet - this is a bug!");
-        }
-
-        final Scoreboard sb = sm.getMainScoreboard();
-        final HashMap<Objective, Pair<Integer, ScoreboardUpdateBehavior>> scores = new HashMap<>();
-
-        // collect scores for old username.
-        for (Entry<String, ScoreboardUpdateBehavior> entry : scoresToUpdate.entrySet()) {
-            Objective obj = sb.getObjective(entry.getKey());
-            if (obj == null) {
-                getLogger().warning("Scoreboard Objective " + entry.getKey() + " doesn't exist!");
-                continue;
-            }
-            Score score = obj.getScore(oldName);
-            if (!score.isScoreSet()) {
-                continue;
-            }
-            scores.put(obj, new Pair<>(score.getScore(), entry.getValue()));
-        }
-
-        boolean moveSuccess = true;
-        // transfer collected scores to new username.
-        for (Entry<Objective, Pair<Integer, ScoreboardUpdateBehavior>> entry : scores.entrySet()) {
-            moveSuccess &= updateScore(entry.getKey(), newName, entry.getValue().a, entry.getValue().b);
-        }
-
-        // clear scores for old username.
-        if (resetOldScores && moveSuccess) {
-            HashMap<Objective, Integer> scoresToKeep = new HashMap<>();
-            for (Objective obj : sb.getObjectives()) {
-                if (scoresToUpdate.containsKey(obj.getName()) || !obj.getScore(oldName).isScoreSet()) {
-                    continue;
-                }
-                scoresToKeep.put(obj, obj.getScore(oldName).getScore());
-            }
-            sb.resetScores(oldName);
-            for (Entry<Objective, Integer> entry : scoresToKeep.entrySet()) {
-                entry.getKey().getScore(oldName).setScore(entry.getValue());
-            }
-        }
-        return moveSuccess;
     }
 
     String getPreviousName(Player player) {
@@ -136,10 +59,16 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
     private void onPlayerJoinSync(PlayerJoinEvent evt) {
         final String currName = evt.getPlayer().getName();
         final String prevName = getPreviousName(evt.getPlayer());
+        
+        if(transferHelper==null){//this should not occur because we don't register events until after the objects are init
+            getLogger().warning("Cannot update scores for player '" + currName + "' - plugin isn't ready yet!");
+            return;
+        }
+        
         if (!prevName.equals(currName)) { // name changed.
             boolean success = false;
             try {
-                success = updateScores(prevName, currName);
+                success = transferHelper.updateScores(prevName, currName);
             } catch (IllegalStateException ex) {
                 success = false;
             }
