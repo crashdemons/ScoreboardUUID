@@ -10,6 +10,5 @@ package com.github.crashdemons.scoreboarduuid;
  * @author crashdemons (crashenator at gmail.com)
  */
 public enum ScoreboardUpdateBehavior {
-    OVERWRITE,
-    ADD
+	OVERWRITE, ADD, SAFE_MOVE
 }

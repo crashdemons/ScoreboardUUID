@@ -1,138 +1,152 @@
 package net.evmodder.scoreboarduuid;
 
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
+import com.github.crashdemons.util.Pair;
+import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map.Entry;
-import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 
-public class ScoreboardUUID extends JavaPlugin implements Listener {
+/**
+*
+* @author EvModder/EvDoc (evdoc at altcraft.net)
+*/
+public class ScoreboardUUID extends JavaPlugin implements Listener{
+	HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate;
+	boolean resetOldScores;
 
-    List<String> scoresToUpdate;
-    boolean resetOldScores;
-    ScoreboardUpdateBehavior updateBehavior;
+	@Override public void onEnable(){
+		if(!getConfig().isConfigurationSection("uuid-based-scores")){
+			getLogger().warning("No uuid-based scores found in config! Disabling plugin");
+			this.onDisable();
+			return;
+		}
+		resetOldScores = getConfig().getBoolean("reset-old-scores", true);
 
-    @Override
-    public void onEnable() {
-        saveDefaultConfig();//fails if it exists
-        super.reloadConfig();//shouldn't matter but sometimes...
-        scoresToUpdate = getConfig().getStringList("uuid-based-scores");
-        resetOldScores = getConfig().getBoolean("reset-old-scores");
+		ConfigurationSection scoreListSection = getConfig().getConfigurationSection("uuid-based-scores");
+		for(String key : scoreListSection.getKeys(false)){
+			String strUpdateBehavior = getConfig().getString("scoreboard-update-behavior", "OVERWRITE");
+			ScoreboardUpdateBehavior updateBehavior;
+			try{
+				updateBehavior = ScoreboardUpdateBehavior.valueOf(strUpdateBehavior);
+			}
+			catch(IllegalArgumentException e){
+				updateBehavior = ScoreboardUpdateBehavior.OVERWRITE;
+				getLogger().warning("Invalid behavior type '" + strUpdateBehavior + "' for score '" + key + "' using " + updateBehavior.name());
+			}
+			scoresToUpdate.put(key, updateBehavior);
+		}
 
-        String strUpdateBehavior = getConfig().getString("scoreboard-update-behavior");
-        try {
-            updateBehavior = ScoreboardUpdateBehavior.valueOf(strUpdateBehavior);
-        } catch (IllegalArgumentException e) {
-            updateBehavior = ScoreboardUpdateBehavior.OVERWRITE;
-            getLogger().warning("Invalid behavior type " + strUpdateBehavior + ". using " + updateBehavior.name());
-        }
+		getServer().getPluginManager().registerEvents(this, this);
+	}
 
-        getServer().getPluginManager().registerEvents(this, this);
-    }
+	boolean updateScore(Objective obj, String username, int scoreValue, ScoreboardUpdateBehavior updateBehavior){
+		Score newScoreObject = obj.getScore(username);
 
-    @Override
-    public void onDisable() {
-    }
+		int newScoreValue;
+		switch(updateBehavior){
+			case SAFE_MOVE:
+				if(newScoreObject.isScoreSet()){
+					getLogger().severe("Failed to update score '" + obj.getName() + "' for user '" + username +"' - entry already exists!");
+					return false;
+				}
+			case OVERWRITE:
+				newScoreValue = scoreValue;
+				break;
+			case ADD:
+				newScoreValue = scoreValue + (newScoreObject.isScoreSet() ? newScoreObject.getScore() : 0);
+				break;
+			default:
+				getLogger().severe("Encountered invalid behavior type " + updateBehavior + " while updating score: " + obj.getName());
+				newScoreValue = -1;
+				return false;
+		}
+		//if(newScoreObject.isScoreSet() && newScoreObject.getScore() == newScoreValue) return false; // no change occurred.
+		newScoreObject.setScore(newScoreValue);
+		return true;
+	}
 
-    boolean updateScore(Scoreboard sb, String scoreName, Integer scoreValue, Score newScoreObject) {
-        switch (updateBehavior) {
-            case OVERWRITE:
-                newScoreObject.setScore(scoreValue);
-                return true;
-            case ADD:
-                int newScore = scoreValue;
-                if (newScoreObject.isScoreSet()) {
-                    newScore += newScoreObject.getScore();
-                }
-                newScoreObject.setScore(newScore);
-                return true;
-            default:
-                throw new IllegalArgumentException("Unsupported behavior type - this is a bug!");
-        }
-    }
+	boolean updateScores(String oldName, String newName){
+		getLogger().info("Updating scoreboard of '" + oldName + "' to '" + newName + "'");
 
-    boolean updateScore(Scoreboard sb, String scoreName, Integer scoreValue, String newUsername) {
-        Objective obj = sb.getObjective(scoreName);
-        if (obj == null) {
-            getLogger().warning("Scoreboard Objective " + scoreName + " doesn't exist!");
-            return false;
-        }
-        Score newScore = obj.getScore(newUsername);
-        return updateScore(sb, scoreName, scoreValue, newScore);
-    }
+		final ScoreboardManager sm = getServer().getScoreboardManager();
+		if(sm == null){
+			throw new IllegalStateException("World has not loaded yet - this is a bug!");
+		}
 
-    void updateScores(String oldName, String newName) {
-        getLogger().info("Updating scoreboard of '" + oldName + "' to '" + newName + "'");
+		final Scoreboard sb = sm.getMainScoreboard();
+		final HashMap<Objective, Pair<Integer, ScoreboardUpdateBehavior>> scores = new HashMap<>();
 
-        final ScoreboardManager sm = getServer().getScoreboardManager();
-        if (sm == null) {
-            throw new IllegalStateException("World has not loaded yet - this is a bug!");
-        }
+		// collect scores for old username.
+		for(Entry<String, ScoreboardUpdateBehavior> entry : scoresToUpdate.entrySet()){
+			Objective obj = sb.getObjective(entry.getKey());
+			if(obj == null){
+				getLogger().warning("Scoreboard Objective " + entry.getKey() + " doesn't exist!");
+				continue;
+			}
+			Score score = obj.getScore(oldName);
+			if(!score.isScoreSet()) continue;
+			scores.put(obj, new Pair<>(score.getScore(), entry.getValue()));
+		}
 
-        final Scoreboard sb = sm.getMainScoreboard();
-        final HashMap<String, Integer> scores = new HashMap<>();
+		boolean moveSuccess = true;
+		// transfer collected scores to new username.
+		for(Entry<Objective, Pair<Integer, ScoreboardUpdateBehavior>> entry : scores.entrySet()){
+			moveSuccess &= updateScore(entry.getKey(), newName, entry.getValue().a, entry.getValue().b);
+		}
 
-        //collect scores for old username
-        for (String scoreName : scoresToUpdate) {
-            Objective obj = sb.getObjective(scoreName);
-            if (obj == null) {
-                getLogger().warning("Scoreboard Objective " + scoreName + " doesn't exist!");
-                continue;
-            }
-            Score score = obj.getScore(oldName);
-            if (!score.isScoreSet()) {
-                continue;
-            }
-            scores.put(scoreName, score.getScore());
-        }
+		// clear scores for old username.
+		if(resetOldScores && moveSuccess){
+			HashMap<Objective, Integer> scoresToKeep = new HashMap<>();
+			for(Objective obj : sb.getObjectives()){
+				if(scoresToUpdate.containsKey(obj.getName()) || !obj.getScore(oldName).isScoreSet()) continue;
+				scoresToKeep.put(obj, obj.getScore(oldName).getScore());
+			}
+			sb.resetScores(oldName);
+			for(Entry<Objective, Integer> entry : scoresToKeep.entrySet()){
+				entry.getKey().getScore(oldName).setScore(entry.getValue());
+			}
+		}
+		return moveSuccess;
+	}
 
-        //transfer collected scores to new user
-        for (Entry<String, Integer> entry : scores.entrySet()) {
-            updateScore(sb, entry.getKey(), entry.getValue(), newName);
-        }
+	String getPreviousName(Player player){
+		for(String tag : player.getScoreboardTags()){
+			if(tag.startsWith("prev_name_")) return tag.substring(10);
+		}
+		return player.getName();
+	}
 
-        //remove scores for old username
-        if (resetOldScores) {
-            sb.resetScores(oldName);
-        }
-    }
+	private void onPlayerJoinSync(PlayerJoinEvent evt){
+		final String currName = evt.getPlayer().getName();
+		final String prevName = getPreviousName(evt.getPlayer());
+		if(!prevName.equals(currName)){ // name changed.
+			boolean success = false;
+			try{
+				success = updateScores(prevName, currName);
+			}
+			catch(IllegalStateException ex){
+				success = false;
+			}
+			if(!success){
+				getLogger().warning("Encountered error whilst updating scores for player '" + currName + "'!");
+				return; // do not reset scoreboard tags if score update failed - attempt again later.
+			}
+		}
+		// reset tags for user.
+		evt.getPlayer().removeScoreboardTag("prev_name_" + prevName);
+		evt.getPlayer().addScoreboardTag("prev_name_" + currName);
+	}
 
-    String getPreviousName(Player player) {
-        for (String tag : player.getScoreboardTags()) {
-            if (tag.startsWith("prev_name_")) {
-                return tag.substring(10);
-            }
-        }
-        return player.getName();
-    }
-
-    private void onPlayerJoinSync(PlayerJoinEvent evt) {
-        final String currName = evt.getPlayer().getName();
-        final String prevName = getPreviousName(evt.getPlayer());
-        if (!prevName.equals(currName)) {// name changed
-            try {
-                updateScores(prevName, currName);
-            } catch (IllegalStateException ex) {
-                getLogger().warning("Error updating scores - was the objective deleted?");
-                return;//do not reset scoreboard tags if score update failed - attempt again.
-            }
-        }
-        //reset tags for user.
-        evt.getPlayer().removeScoreboardTag("prev_name_" + prevName);
-        evt.getPlayer().addScoreboardTag("prev_name_" + currName);
-    }
-
-    @EventHandler
-    public void onPlayerJoinAsync(PlayerJoinEvent evt) {
-        Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> onPlayerJoinSync(evt), 1L);
-    }
+	@EventHandler public void onPlayerJoinAsync(PlayerJoinEvent evt){
+		getServer().getScheduler().scheduleSyncDelayedTask(this, () -> onPlayerJoinSync(evt), 1L);
+	}
 }
