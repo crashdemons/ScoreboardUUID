@@ -58,6 +58,7 @@ public class ScoreboardUUID extends JavaPlugin implements Listener{
 					getLogger().severe("Failed to update score '" + obj.getName() + "' for user '" + username +"' - entry already exists!");
 					return false;
 				}
+                                //else, intentional fallthrough - overwrite unset scores.
 			case OVERWRITE:
 				newScoreValue = scoreValue;
 				break;
