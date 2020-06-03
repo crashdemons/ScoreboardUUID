@@ -17,8 +17,8 @@ import java.util.Map;
  * @param <V> The type of the second object to hold (the value)
  */
 public class Pair<K,V> implements Map.Entry<K,V>{
-    private K key;
-    private V value;
+    public K a;
+    public V b;
     
     /**
      * Construct a pair from two objects
@@ -26,8 +26,8 @@ public class Pair<K,V> implements Map.Entry<K,V>{
      * @param second the second object in the pair (the value)
      */
     public Pair(K first, V second){
-        this.key=first;
-        this.value=second;
+        this.a=first;
+        this.b=second;
     }
     
     /**
@@ -38,8 +38,8 @@ public class Pair<K,V> implements Map.Entry<K,V>{
      * @param entry a map entry that holds two objects
      */
     public Pair(Map.Entry<K,V> entry){
-        key=entry.getKey();
-        value=entry.getValue();
+        a=entry.getKey();
+        b=entry.getValue();
     }
 
     /**
@@ -51,9 +51,9 @@ public class Pair<K,V> implements Map.Entry<K,V>{
     public Object get(int i){
         switch (i) {
             case 0:
-                return key;
+                return a;
             case 1:
-                return value;
+                return b;
             default:
                 throw new IndexOutOfBoundsException("Pair indexes may only be 0 or 1, not "+i);// or return null ??
         }
@@ -69,10 +69,10 @@ public class Pair<K,V> implements Map.Entry<K,V>{
     public void set(int i,Object v){
         switch (i) {
             case 0:
-                key = (K) v;
+                a = (K) v;
                 break;
             case 1:
-                value = (V) v;
+                b = (V) v;
                 break;
             default:
                 throw new IndexOutOfBoundsException("Pair indexes may only be 0 or 1, not "+i);
@@ -84,14 +84,14 @@ public class Pair<K,V> implements Map.Entry<K,V>{
      */
     @Override
     public K getKey() {
-        return key;
+        return a;
     }
 
     /**
      * @param first the key to set
      */
     public void setKey(K first) {
-        this.key = first;
+        this.a = first;
     }
 
     /**
@@ -99,7 +99,7 @@ public class Pair<K,V> implements Map.Entry<K,V>{
      */
     @Override
     public V getValue() {
-        return value;
+        return b;
     }
 
     /**
@@ -108,8 +108,8 @@ public class Pair<K,V> implements Map.Entry<K,V>{
      */
     @Override
     public V setValue(V second) {
-        V old = this.value;
-        this.value = second;
+        V old = this.b;
+        this.b = second;
         return old;
     }
 }
