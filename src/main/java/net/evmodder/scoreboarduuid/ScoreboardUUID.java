@@ -19,29 +19,14 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate = new HashMap<>();
-        boolean resetOldScores;
-        if (!getConfig().isConfigurationSection("uuid-based-scores")) {
+        HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate = ConfigUtil.getScoresToUpdate(this);
+        if(scoresToUpdate==null){
             getLogger().warning("No uuid-based scores found in config! Disabling plugin");
             this.onDisable();
             return;
         }
-        resetOldScores = getConfig().getBoolean("reset-old-scores", true);
-
-        ConfigurationSection scoreListSection = getConfig().getConfigurationSection("uuid-based-scores");
-        for (String key : scoreListSection.getKeys(false)) {
-            String strUpdateBehavior = getConfig().getString("scoreboard-update-behavior", "OVERWRITE");
-            ScoreboardUpdateBehavior updateBehavior;
-            try {
-                updateBehavior = ScoreboardUpdateBehavior.valueOf(strUpdateBehavior);
-            } catch (IllegalArgumentException e) {
-                updateBehavior = ScoreboardUpdateBehavior.OVERWRITE;
-                getLogger().warning("Invalid behavior type '" + strUpdateBehavior + "' for score '" + key + "' using " + updateBehavior.name());
-            }
-            scoresToUpdate.put(key, updateBehavior);
-        }
-
-        transferHelper = new ScoreTransferHelper(this, scoresToUpdate, resetOldScores);
+        
+        transferHelper = new ScoreTransferHelper(this, scoresToUpdate, ConfigUtil.getResetOldScores(this));
         
         getServer().getPluginManager().registerEvents(this, this);
     }
