@@ -16,7 +16,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 
 /**
- *
+ * Class object that assists in transferring scores between two usernames.
  * @author crashdemons (crashenator at gmail.com)
  */
 public class ScoreTransferHelper {
@@ -24,6 +24,12 @@ public class ScoreTransferHelper {
     private final HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate;
     private final boolean resetOldScores;//may need to change final if you want reload capability.
     
+    /**
+     * Constructs a new instance of the transfer helper
+     * @param parentPlugin the bukkit plugin requesting support
+     * @param scoresToUpdate a map of named scoreboard objectives and their associated update behaviors
+     * @param resetOldScores whether to reset all scores of the user(s) the scores are being transferred from.
+     */
     public ScoreTransferHelper(JavaPlugin parentPlugin, HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate, boolean resetOldScores){
         plugin=parentPlugin;
         this.scoresToUpdate = scoresToUpdate;
@@ -62,6 +68,13 @@ public class ScoreTransferHelper {
         return true;
     }
 
+    /**
+     * Transfer configured scores from one username to another
+     * @param oldName the name to transfer scores from
+     * @param newName the name to transfer scores to
+     * @return whether scores could be transferred successfully.
+     * @throws IllegalStateException thrown when the scoreboard manager is not available (world is not loaded).
+     */
     public boolean updateScores(String oldName, String newName) {
         getLogger().info("Updating scoreboard of '" + oldName + "' to '" + newName + "'");
 
