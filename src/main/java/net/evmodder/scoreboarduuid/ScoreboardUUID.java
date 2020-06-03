@@ -1,8 +1,7 @@
 package net.evmodder.scoreboarduuid;
 
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
-import net.evmodder.EvLib.EvPlugin;
-import net.evmodder.EvLib.util.Pair;
+import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import org.bukkit.configuration.ConfigurationSection;
@@ -19,11 +18,11 @@ import org.bukkit.scoreboard.ScoreboardManager;
 *
 * @author EvModder/EvDoc (evdoc at altcraft.net)
 */
-public class ScoreboardUUID extends EvPlugin implements Listener{
+public class ScoreboardUUID extends JavaPlugin implements Listener{
 	HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate;
 	boolean resetOldScores;
 
-	@Override public void onEvEnable(){
+	@Override public void onEnable(){
 		if(!getConfig().isConfigurationSection("uuid-based-scores")){
 			getLogger().warning("No uuid-based scores found in config! Disabling plugin");
 			this.onDisable();
