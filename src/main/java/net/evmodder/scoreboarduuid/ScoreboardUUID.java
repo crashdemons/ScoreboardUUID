@@ -5,7 +5,6 @@ import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
 import java.util.HashMap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -47,18 +46,11 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
     }
 
-    String getPreviousName(Player player) {
-        for (String tag : player.getScoreboardTags()) {
-            if (tag.startsWith("prev_name_")) {
-                return tag.substring(10);
-            }
-        }
-        return player.getName();
-    }
+
 
     private void onPlayerJoinSync(PlayerJoinEvent evt) {
         final String currName = evt.getPlayer().getName();
-        final String prevName = getPreviousName(evt.getPlayer());
+        final String prevName = TagUtil.getPreviousName(evt.getPlayer());
         
         if(transferHelper==null){//this should not occur because we don't register events until after the objects are init
             getLogger().warning("Cannot update scores for player '" + currName + "' - plugin isn't ready yet!");
@@ -78,8 +70,7 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
             }
         }
         // reset tags for user.
-        evt.getPlayer().removeScoreboardTag("prev_name_" + prevName);
-        evt.getPlayer().addScoreboardTag("prev_name_" + currName);
+        TagUtil.updatePreviousName(evt.getPlayer(), prevName, currName);
     }
 
     @EventHandler
