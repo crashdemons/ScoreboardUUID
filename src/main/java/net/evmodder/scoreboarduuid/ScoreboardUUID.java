@@ -1,6 +1,7 @@
 package net.evmodder.scoreboarduuid;
 
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
+import com.github.crashdemons.util.Pair;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.Map.Entry;
