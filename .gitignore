@@ -8,3 +8,9 @@
 */*/*/.DS_Store
 */*/*/*/.DS_Store
 /target/
+/nbproject/private/
+/dist/lib/
+/lib/
+/build/
+/dist/
+/nbproject/
