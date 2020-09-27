@@ -2,7 +2,10 @@ package net.evmodder.scoreboarduuid;
 
 import com.github.crashdemons.scoreboarduuid.ScoreTransferHelper;
 import com.github.crashdemons.scoreboarduuid.ScoreboardUpdateBehavior;
+import com.github.crashdemons.scoreboarduuid.events.PlayerUpdateUsernameEvent;
 import java.util.Map;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,8 +36,9 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
 
 
     private void onPlayerJoinSync(PlayerJoinEvent evt) {
-        final String currName = evt.getPlayer().getName();
-        final String prevName = TagUtil.getPreviousName(evt.getPlayer());
+        final Player player = evt.getPlayer();
+        final String currName = player.getName();
+        final String prevName = TagUtil.getPreviousName(player);
         
         if(transferHelper==null){//this should not occur because we don't register events until after the objects are init
             getLogger().warning("Cannot update scores for player '" + currName + "' - plugin isn't ready yet!");
@@ -42,6 +46,9 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
         }
         
         if (!prevName.equals(currName)) { // name changed.
+            
+            Bukkit.getServer().getPluginManager().callEvent(new PlayerUpdateUsernameEvent(player, prevName, currName));
+            
             boolean success = false;
             try {
                 success = transferHelper.updateScores(prevName, currName);
