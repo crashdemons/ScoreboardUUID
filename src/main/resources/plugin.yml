@@ -1,5 +1,5 @@
 name: ScoreboardUUID
-main: net.evmodder.ScoreboardUUID.ScoreboardUUID
+main: net.evmodder.scoreboarduuid.ScoreboardUUID
 author: [EvModder/EvDoc,crashdemons]
-version: 2.0.1 #2.0=crashdemons merge
+version: ${project.version} #2.0=crashdemons merge
 api-version: 1.13
