@@ -12,3 +12,5 @@ uuid-based-scores:
 
 # Whether to delete old scoreboard entries when a player changes their name (after moving scores)
 reset-old-scores: true
+
+disable-without-scores: true
