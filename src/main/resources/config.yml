@@ -14,3 +14,7 @@ uuid-based-scores:
 reset-old-scores: true
 
 disable-without-scores: true
+
+#default behavior when above definitions are not understood
+scoreboard-update-behavior: OVERWRITE
+

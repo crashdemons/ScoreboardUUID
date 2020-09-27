@@ -28,6 +28,22 @@ public class ConfigUtil {
         return plugin.getConfig().getBoolean("reset-old-scores", true);
     }
     
+    private static ScoreboardUpdateBehavior parseBehavior(String strUpdateBehavior, ScoreboardUpdateBehavior defaultBehavior, String referenceKey, JavaPlugin debugPlugin){
+        ScoreboardUpdateBehavior updateBehavior;
+        try {
+            updateBehavior = ScoreboardUpdateBehavior.valueOf(strUpdateBehavior);
+        } catch (IllegalArgumentException e) {
+            updateBehavior = defaultBehavior;//ScoreboardUpdateBehavior.OVERWRITE;
+            if(debugPlugin!=null && referenceKey!=null) debugPlugin.getLogger().warning("Invalid behavior type '" + strUpdateBehavior + "' for setting '" + referenceKey + "' using " + updateBehavior.name());
+        }
+        return updateBehavior;
+    }
+    
+    private static ScoreboardUpdateBehavior getDefaultBehavior(JavaPlugin plugin){
+        String strUpdateBehavior = plugin.getConfig().getString("scoreboard-update-behavior", "OVERWRITE");
+        return parseBehavior(strUpdateBehavior,ScoreboardUpdateBehavior.OVERWRITE,"scoreboard-update-behavior", plugin);
+    }
+    
     /**
      * Gets the configured list of scores to transfer on name changes with their associated update behavior.
      * @param plugin the plugin to retrieve the configuration for
@@ -35,23 +51,21 @@ public class ConfigUtil {
      */
     public static Map<String, ScoreboardUpdateBehavior> getScoresToUpdate(JavaPlugin plugin){
         if (!plugin.getConfig().isConfigurationSection("uuid-based-scores")) {
+            plugin.getLogger().warning("Config error: uuid-based-scores is not a section! Legacy configs are not supported.");
             return null;
             //getLogger().warning("No uuid-based scores found in config! Disabling plugin");
             //this.onDisable();
            // return;
         }
         
+        ScoreboardUpdateBehavior defaultBehavior = getDefaultBehavior(plugin);
+        
         HashMap<String, ScoreboardUpdateBehavior> scoresToUpdate = new HashMap<>();
         ConfigurationSection scoreListSection = plugin.getConfig().getConfigurationSection("uuid-based-scores");//should not be null because we check above AND have a default
         for (String key : scoreListSection.getKeys(false)) {
-            String strUpdateBehavior = plugin.getConfig().getString("scoreboard-update-behavior", "OVERWRITE");
-            ScoreboardUpdateBehavior updateBehavior;
-            try {
-                updateBehavior = ScoreboardUpdateBehavior.valueOf(strUpdateBehavior);
-            } catch (IllegalArgumentException e) {
-                updateBehavior = ScoreboardUpdateBehavior.OVERWRITE;
-                plugin.getLogger().warning("Invalid behavior type '" + strUpdateBehavior + "' for score '" + key + "' using " + updateBehavior.name());
-            }
+            
+            String strKeyBehavior = scoreListSection.getString(key);
+            ScoreboardUpdateBehavior updateBehavior = parseBehavior(strKeyBehavior, defaultBehavior, key, plugin);
             scoresToUpdate.put(key, updateBehavior);
         }
         return scoresToUpdate;
