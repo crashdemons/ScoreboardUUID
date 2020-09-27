@@ -37,8 +37,8 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
 
     private void onPlayerJoinSync(PlayerJoinEvent evt) {
         final Player player = evt.getPlayer();
-        final String currName = player.getName();
         final String prevName = TagUtil.getPreviousName(player);
+        final String currName = player.getName();
         
         if(transferHelper==null){//this should not occur because we don't register events until after the objects are init
             getLogger().warning("Cannot update scores for player '" + currName + "' - plugin isn't ready yet!");
