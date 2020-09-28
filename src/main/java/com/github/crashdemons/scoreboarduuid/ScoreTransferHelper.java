@@ -5,7 +5,7 @@
  */
 package com.github.crashdemons.scoreboarduuid;
 
-import com.github.crashdemons.util.Pair;
+import com.github.crashdemons.scoreboarduuid.util.Pair;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
