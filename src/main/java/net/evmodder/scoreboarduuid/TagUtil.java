@@ -36,7 +36,7 @@ public class TagUtil {
      * @param currName the current name of the user to record before the next change.
      */
     public static void updatePreviousName(Player player, String prevName, String currName){
-        player.removeScoreboardTag("prev_name_" + prevName);
-        player.addScoreboardTag("prev_name_" + currName);
+        if(prevName!=null) player.removeScoreboardTag("prev_name_" + prevName);
+        if(currName!=null) player.addScoreboardTag("prev_name_" + currName);
     }
 }
