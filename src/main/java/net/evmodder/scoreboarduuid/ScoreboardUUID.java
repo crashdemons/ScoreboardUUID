@@ -48,20 +48,24 @@ public class ScoreboardUUID extends JavaPlugin implements Listener {
             getLogger().warning("Cannot update scores for player '" + currName + "' - plugin isn't ready yet!");
             return;
         }
-        
-        if (!prevName.equals(currName)) { // name changed.
-            
-            Bukkit.getServer().getPluginManager().callEvent(new PlayerUpdateUsernameEvent(player, prevName, currName));
-            
-            boolean success = false;
-            try {
-                success = transferHelper.updateScores(prevName, currName);
-            } catch (IllegalStateException ex) {
-                success = false;
-            }
-            if (!success) {
-                getLogger().warning("Encountered error whilst updating scores for player '" + currName + "'!");
-                return; // do not reset scoreboard tags if score update failed - attempt again later.
+
+        if(prevName!=null) {
+            if (!prevName.equals(currName)) { // name changed.
+
+                Bukkit.getServer().getPluginManager().callEvent(new PlayerUpdateUsernameEvent(player, prevName, currName));
+
+                boolean success = false;
+                String reason = "";
+                try {
+                    success = transferHelper.updateScores(prevName, currName);
+                } catch (IllegalStateException ex) {
+                    success = false;
+                    reason = ex.getMessage();
+                }
+                if (!success) {
+                    getLogger().warning("Encountered error whilst updating scores for player '" + currName + "'! - "+reason);
+                    return; // do not reset scoreboard tags if score update failed - attempt again later.
+                }
             }
         }
         // reset tags for user.
