@@ -76,6 +76,7 @@ public class ScoreTransferHelper {
      * @throws IllegalStateException thrown when the scoreboard manager is not available (world is not loaded).
      */
     public boolean updateScores(String oldName, String newName) {
+        if(oldName==null) return false;
         getLogger().info("Updating scoreboard of '" + oldName + "' to '" + newName + "'");
 
         final ScoreboardManager sm = plugin.getServer().getScoreboardManager();
